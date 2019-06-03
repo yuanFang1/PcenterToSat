@@ -309,7 +309,7 @@ namespace szx {
 		return c1.nodes.size() < c2.nodes.size();
 	}
 	///数据预处理相关代码
-	bool ifCanBeDominated(set<ID> &N3_vw, ID u, vector<vector<bool>> &belongToNeigh) {/*判断结点u能否支配某个结点集*/
+	bool ifCanBeDominated(vector<ID> &N3_vw, ID u, vector<vector<bool>> &belongToNeigh) {/*判断结点u能否支配某个结点集*/
 		for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
 			ID t = *iter;
 			if (u != t && !belongToNeigh[u][t]) {/*说明t不属于u的邻居结点，即u无法支配t */
@@ -358,7 +358,21 @@ namespace szx {
 			exit(1);
 		}
 	}
+	void floyd(std::vector<std::vector<Length>> &adjMat) {
+		int size = adjMat.size();
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				for (int k = 0; k < size; k++) {
+					Length select = (adjMat[j][i] == INT_MAX || adjMat[i][k] == INT_MAX)
+						? INT_MAX : (adjMat[j][i] + adjMat[i][k]);
 
+					if (adjMat[j][k] > select) {
+						adjMat[j][k] = select;
+					}
+				}
+			}
+		}
+	}
 	void handleWhiteNodes(int size, vector<bool> &isWhiteNode, vector<vector<ID>> &new_neighbours, std::set<ID> &trueSets, std::set<ID> &delSets) {
 		/*R1 :delete edges between white vertices*/
 		for (auto i = 0; i < size; ++i) {
@@ -579,194 +593,214 @@ namespace szx {
 		cout <<"rule1:"<< trueSets.size() << endl;
 		cout <<"rule1:"<< delSets.size() << endl;
 	}
-	void dataReductionRule2(std::vector<std::vector<ID>> &neighbours, std::set<std::vector<ID>> &atLeastTrueSets, std::set<ID> &trueSets, std::set<ID> &delSets) {
+	void reduction_merge(const std::vector<std::vector<ID>> &neighbours, int v, int w, std::vector<ID> &N_vw) {
+		const std::vector<ID> &nv = neighbours[v];
+		const std::vector<ID> &nw = neighbours[w];
+		auto size_v = nv.size();
+		auto size_w = nw.size();
+		auto index_v = 0, index_w = 0;
+		N_vw.reserve(size_v + size_w);
+		while (index_v < size_v &&index_w < size_w) {
+			if (nv[index_v] == w) { index_v++; continue; }
+			if (nw[index_w] == v) { index_w++; continue; }
+
+			if (nv[index_v] < nw[index_w]) {
+				N_vw.push_back(nv[index_v]);
+				index_v++;
+			}
+			else if (nv[index_v] == nw[index_w]) {
+				N_vw.push_back(nv[index_v]);
+				index_v++;
+				index_w++;
+			}
+			else if (nv[index_v] > nw[index_w]) {
+				N_vw.push_back(nw[index_w]);
+				index_w++;
+			}
+		}
+		while (index_v < size_v) {
+			N_vw.push_back(nv[index_v]);
+			index_v++;
+		}
+		while (index_w < size_w) {
+			N_vw.push_back(nw[index_w]);
+			index_w++;
+		}
+	}
+	void dataReductionRule2(const std::vector<std::vector<ID>> &neighbours, std::set<std::vector<ID>> &atLeastTrueSets, std::set<ID> &trueSets, std::set<ID> &delSets) {
 		int size = neighbours.size();
 		vector<vector<bool>> belongToNeigh; /* belongToNeigh[v][u] ，标记结点u是否属于N(v) */
-		map<ID,map<ID,set<ID>>> N; /* 用于存储N(v,w) */
+		vector<vector<Length>> adjMat;
+		map<ID, map<ID, set<ID>>> N; /* 用于存储N(v,w) */
 		map<ID, map<ID, set<ID>>> N1;
 		map<ID, map<ID, set<ID>>> N2;
 		map<ID, map<ID, set<ID>>> N3;
 
 		///内存申请
 		belongToNeigh.resize(size);
+		adjMat.resize(size);
 		for (auto v = 0; v < size; ++v) {
 			belongToNeigh[v].resize(size);
+			adjMat[v].resize(size);
+		}
+		for (auto v = 0; v < size; ++v) {
+			for (auto w = 0; w < size; ++w) {
+				adjMat[v][w] = INT_MAX;
+			}
 		}
 		for (auto v = 0; v < size; ++v) {
 			for (auto i = 0; i < neighbours[v].size(); ++i) {
 				ID u = neighbours[v][i];
 				belongToNeigh[v][u] = true;
+				adjMat[v][u] = 1;
 			}
 		}
-
+		floyd(adjMat);
 		for (auto v = 0; v < size; ++v) {
-			map<ID, set<ID>> V;
+			auto find_del = delSets.find(v),find_true = trueSets.find(v);
+			if (find_del != delSets.end() ) continue;
 			for (auto w = v + 1; w < size; ++w) {
-				set<ID> W;
-				for (auto i = 0; i < neighbours[v].size(); ++i) {
-					int u = neighbours[v][i]; /* u为v的邻居结点 */
-					if (u != w) {
-						W.insert(u);
-					}
-				}
-				for (auto i = 0; i < neighbours[w].size(); ++i) {
-					int u = neighbours[w][i]; /* u为w的邻居结点 */
-					if (u != v) {
-						W.insert(u);
-					}
-				}
-				V.insert(make_pair(w, W));
-			}
-			N.insert(make_pair(v,V));
-		}
-		for (auto iter_v = N.begin(); iter_v != N.end(); ++iter_v) {
-			ID v = (*iter_v).first;
-			map<ID, set<ID>> &temp = (*iter_v).second;
-			map<ID, set<ID>> N1_second;
-			for (auto iter_w = temp.begin(); iter_w != temp.end(); ++iter_w) {
-				ID w = (*iter_w).first;
-				set<ID> &N_vw = (*iter_w).second;/* 即集合N(v,w) */
-				set<ID> N1_vw; /* 集合N1(v,w) */
-				for (auto iter_u = N_vw.begin(); iter_u != N_vw.end(); ++iter_u) {
-					ID u = *iter_u;
-					for (auto j = 0; j < neighbours[u].size(); ++j) {
-						ID t = neighbours[u][j];
-						auto findT = N_vw.find(t);
-						if (t != v && t != w && findT == N_vw.end()) {/* t不属于N[v,w]，即t不为v，也不为w，也不属于N(v,w)*/
-							
-							N1_vw.insert(u);
-							break;
+				if (adjMat[v][w] <= 3) {
+					auto find_del = delSets.find(w), find_true = trueSets.find(w);
+					if (find_del != delSets.end()) continue;
+					vector<ID> N_vw; //用于保存N(v,w)
+					vector<bool> isBelongToN_vw,isBelongToN1_vw,isBelongToN2_vw;
+					vector<ID> N1_vw,N2_vw,N3_vw;
+					reduction_merge(neighbours, v, w, N_vw);
+					if (N_vw.size() > 1) {
+						isBelongToN_vw.resize(size);
+						isBelongToN1_vw.resize(size);
+						isBelongToN2_vw.resize(size);
+						N1_vw.reserve(N_vw.size());
+						for (auto i = 0; i < N_vw.size(); ++i) {
+							isBelongToN_vw[N_vw[i]] = true;
 						}
-					}
-				}
-				N1_second.insert(make_pair(w,N1_vw));
-			}
-			N1.insert(make_pair(v, N1_second));
-		}
-		removeNodesSet(N, N1);
-
-		for (auto N_iter_v = N.begin(), N1_iter_v = N1.begin(); N_iter_v != N.end(); ++N_iter_v, ++N1_iter_v) {
-			ID v = (*N_iter_v).first;
-			map<ID, set<ID>> &tempN = (*N_iter_v).second;
-			map<ID, set<ID>> &tempN1 = (*N1_iter_v).second;
-			map<ID, set<ID>> N2_second;
-			for (auto N_iter_w = tempN.begin(), N1_iter_w = tempN1.begin(); N_iter_w != tempN.end(); ++N_iter_w, ++N1_iter_w) {
-				ID w = (*N_iter_w).first;
-				set<ID> &N_vw = (*N_iter_w).second; /* 此时的N(v,w)中已经不含N1(v,w)的结点 */
-				set<ID> &N1_vw = (*N1_iter_w).second;
-				set<ID> N2_vw;
-				for (auto iter_u = N_vw.begin(); iter_u != N_vw.end(); ++iter_u) {/* 遍历N(v,w)中除去N1(v,w)的结点u */
-					ID u = *iter_u;
-					for (auto j = 0; j < neighbours[u].size(); ++j) {/* 判断u的邻居结点t是否有属于N1(v,w)中的结点 */
-						ID t = neighbours[u][j];
-						auto find = N1_vw.find(t);
-						if (find != N1_vw.end()) {/* 说明有t属于N1(v,w) */
-							
-							N2_vw.insert(u);
-							break;
-						}
-					}
-				}
-				N2_second.insert(make_pair(w, N2_vw));
-			}
-			N2.insert(make_pair(v, N2_second));
-		}
-		removeNodesSet(N, N2);
-		N3 = N;
-		for (auto N2_iter_v = N2.begin(), N3_iter_v = N3.begin(); N2_iter_v != N2.end(); ++N2_iter_v, ++N3_iter_v) {
-			ID v = (*N2_iter_v).first;
-			auto find = delSets.find(v);
-			if (find != delSets.end()) continue;
-
-			map<ID, set<ID>> &tempN2 = (*N2_iter_v).second;
-			map<ID, set<ID>> &tempN3 = (*N3_iter_v).second;
-			for (auto N2_iter_w = tempN2.begin(), N3_iter_w = tempN3.begin(); N2_iter_w != tempN2.end(); ++N2_iter_w, ++N3_iter_w) {
-				ID w = (*N2_iter_w).first;
-				find = delSets.find(w);
-				set<ID> &N3_vw= (*N3_iter_w).second;
-				set<ID> &N2_vw = (*N2_iter_w).second;
-				if (find != delSets.end() || N3_vw.size() <= 1) continue;
-				bool dominate = false;
-				vector<ID> trueSet;
-				for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {/*判断N3(v,w)中的某个点u能否支配整个N3(v,w)*/
-					ID u = *iter;
-					if (ifCanBeDominated(N3_vw, u, belongToNeigh)) {
-						dominate = true;
-						break;
-					}
-				}
-				if (!dominate) {
-					for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {/*判断N2(v,w)中的某个点u能否支配整个N3(v,w)*/
-						ID u = *iter;
-						if (ifCanBeDominated(N3_vw, u, belongToNeigh)) {
-							dominate = true;
-							break;
-						}
-					}
-				}
-				if (!dominate) {/* 说明N3(v,w)无法被N2(v,w)或N3(v,w)中的某个结点支配 */
-					bool dominate_v = ifCanBeDominated(N3_vw, v, belongToNeigh);
-					bool dominate_w = ifCanBeDominated(N3_vw, w, belongToNeigh);
-					if (dominate_v || dominate_w) {// case1: N3(v,w)能被v或者w支配
-						if (dominate_v && dominate_w) {
-							auto find_v = trueSets.find(v);
-							auto find_w = trueSets.find(w);
-							if (find_v == trueSets.end() && find_w == trueSets.end()) {/* 说明v和w都没有被确定为中心 */
-								trueSet.push_back(v);
-								trueSet.push_back(w);
-								atLeastTrueSets.insert(trueSet);
-							}
-							for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
-								ID u = *iter;
-								delSets.insert(u);
-							}
-							for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
-								ID u = *iter;
-								if (belongToNeigh[v][u] && belongToNeigh[w][u]) {
-									delSets.insert(u);
+						for (auto i = 0; i < N_vw.size(); ++i) {//获取N1(v,w)
+							ID u = N_vw[i];
+							for (auto j = 0; j < neighbours[u].size(); ++j) {
+								ID t = neighbours[u][j];
+								if (t == v || t == w)continue;
+								if (!isBelongToN_vw[t]) {
+									N1_vw.push_back(u);
+									isBelongToN1_vw[u] = true;
+									break;
 								}
 							}
 						}
-						else if (dominate_v && !dominate_w) {
-							trueSets.insert(v);
-							for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
-								ID u = *iter;
-								delSets.insert(u);
-							}
-							for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
-								ID u = *iter;
-								if (belongToNeigh[v][u]) {
-									delSets.insert(u);
+						if (N_vw.size() != N1_vw.size()) {
+							N2_vw.reserve(N_vw.size() - N1_vw.size());
+							for (auto i = 0; i < N_vw.size(); ++i) {//获取N2(v,w)
+								ID u = N_vw[i];
+								if (!isBelongToN1_vw[u]) {/* 遍历N(v,w)中除去N1(v,w)的结点u */
+									for (auto j = 0; j < neighbours[u].size(); ++j) {
+										ID t = neighbours[u][j];
+										if (isBelongToN1_vw[t]) {
+											N2_vw.push_back(u);
+											isBelongToN2_vw[u] = true;
+											break;
+										}
+									}
 								}
 							}
-						}
-						else if (!dominate_v &&dominate_w) {
-							trueSets.insert(w);
-							for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
-								ID u = *iter;
-								delSets.insert(u);
-							}
-							for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
-								ID u = *iter;
-								if ( belongToNeigh[w][u]) {
-									delSets.insert(u);
+							if (N_vw.size() - (N1_vw.size() + N2_vw.size()) > 1) {// |N3(v,w)|需要大于1
+								N3_vw.reserve(N_vw.size() - (N1_vw.size() + N2_vw.size()));
+								for (auto i = 0; i < N_vw.size(); ++i) {//获取N3(v,w)
+									ID u = N_vw[i];
+									if (!isBelongToN1_vw[u] && !isBelongToN2_vw[u]) {
+										N3_vw.push_back(u);
+									}
 								}
-							}
-						}
-					}
-					else {
-						trueSets.insert(v);
-						trueSets.insert(w);
 
-						for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
-							ID u = *iter;
-							delSets.insert(u);
-						}
-						for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
-							ID u = *iter;
-							delSets.insert(u);
+								//接下来判断结点是否可以被确定为中心
+								bool dominate = false;
+								vector<ID> trueSet;
+								for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {/*判断N3(v,w)中的某个点u能否支配整个N3(v,w)*/
+									ID u = *iter;
+									if (ifCanBeDominated(N3_vw, u, belongToNeigh)) {
+										dominate = true;
+										break;
+									}
+								}
+								if (!dominate) {
+									for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {/*判断N2(v,w)中的某个点u能否支配整个N3(v,w)*/
+										ID u = *iter;
+										if (ifCanBeDominated(N3_vw, u, belongToNeigh)) {
+											dominate = true;
+											break;
+										}
+									}
+								}
+								if (!dominate) {/* 说明N3(v,w)无法被N2(v,w)或N3(v,w)中的某个结点支配 */
+									bool dominate_v = ifCanBeDominated(N3_vw, v, belongToNeigh);
+									bool dominate_w = ifCanBeDominated(N3_vw, w, belongToNeigh);
+									if (dominate_v || dominate_w) {// case1: N3(v,w)能被v或者w支配
+										if (dominate_v && dominate_w) {
+											auto find_v = trueSets.find(v);
+											auto find_w = trueSets.find(w);
+											if (find_v == trueSets.end() && find_w == trueSets.end()) {/* 说明v和w都没有被确定为中心 */
+												trueSet.push_back(v);
+												trueSet.push_back(w);
+												atLeastTrueSets.insert(trueSet);
+											}
+											for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+												ID u = *iter;
+												delSets.insert(u);
+											}
+											for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
+												ID u = *iter;
+												if (belongToNeigh[v][u] && belongToNeigh[w][u]) {
+													delSets.insert(u);
+												}
+											}
+										}
+										else if (dominate_v && !dominate_w) {
+											trueSets.insert(v);
+											for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+												ID u = *iter;
+												delSets.insert(u);
+											}
+											for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
+												ID u = *iter;
+												if (belongToNeigh[v][u]) {
+													delSets.insert(u);
+												}
+											}
+										}
+										else if (!dominate_v &&dominate_w) {
+											trueSets.insert(w);
+											for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+												ID u = *iter;
+												delSets.insert(u);
+											}
+											for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
+												ID u = *iter;
+												if (belongToNeigh[w][u]) {
+													delSets.insert(u);
+												}
+											}
+										}
+									}
+									else {
+										trueSets.insert(v);
+										trueSets.insert(w);
+
+										for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+											ID u = *iter;
+											delSets.insert(u);
+										}
+										for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
+											ID u = *iter;
+											delSets.insert(u);
+										}
+									}
+								}
+
+							}
+
 						}
 					}
+					
+					
 				}
 			}
 		}
@@ -874,6 +908,7 @@ namespace szx {
 	* trueSets: 传入传出参数，确定是中心的结点  delSets:传入传出参数，确定不是中心的结点
 	*/
 	void dataReduction(std::vector<std::vector<ID>> &neighbours, std::set<std::vector<ID>> &old_atLeastTrueSets, std::set<ID> &trueSets, std::set<ID> &delSets) {
+		
 		dataReductionRule1(neighbours, trueSets, delSets);
 		dataReductionRule2(neighbours, old_atLeastTrueSets, trueSets, delSets);
 
@@ -1082,8 +1117,14 @@ namespace szx {
 			}
 			coverSets[i] = scns;
 		}
+		ofstream ofs;
+		ofs.open("reduction.txt", ios::app);
+		if (!ofs.is_open()) {
+			cout << "[Fatal] Invalid answer path!" << endl;
+		}
 		//sort(coverSets.begin(), coverSets.end(), coverSets_sort);
 		dataReduction(neighbours, old_atLeastTrueSets, trueSets, delSets);
+		ofs << env.instPath.substr(9, env.instPath.length() - 14) << " " << trueSets.size() << " " << delSets.size() << "\n";
 
 		cout << "after dataReductionRule1:" << old_atLeastTrueSets.size() << endl;
 		
