@@ -214,7 +214,7 @@ namespace szx {
 		std::vector<int> HMerge(std::ofstream & ofs, std::vector<int>& a, std::vector<int>& b);
 		std::vector<int> HSort(std::ofstream & ofs, int n, int start, int end);
 		std::vector<int> SMerge(std::ofstream & ofs, std::vector<int>& a, std::vector<int>& b);
-		void cardinalityNetwork(int nodeNum, int centerNum, const std::string & file_name, std::vector<std::vector<ID>>& belongTo);
+		void cardinalityNetwork(int nodeNum, int centerNum, const std::string & file_name, std::vector<std::vector<ID>>& belongTo, std::set<std::vector<ID>>& atLeasttrueSets);
 		void convertCNFtoDNF(const std::string & cnf_file, const std::string & dnf_file, int nodeNum);
 		void solveWithBoop(const std::string &file_name, Encoding_Mode mode, const std::string &cnf_file, int nodeNum);
 		void full_adder(std::ofstream &ofs, int a, int b, int c, int s_out, int c_out);

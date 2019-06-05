@@ -309,6 +309,15 @@ namespace szx {
 		return c1.nodes.size() < c2.nodes.size();
 	}
 	///数据预处理相关代码
+	bool ifCanBeDominated(set<ID> &N3_vw, ID u, vector<vector<bool>> &belongToNeigh) {/*判断结点u能否支配某个结点集*/
+		for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+			ID t = *iter;
+			if (u != t && !belongToNeigh[u][t]) {/*说明t不属于u的邻居结点，即u无法支配t */
+				return false;
+			}
+		}
+		return true;
+	}
 	bool ifCanBeDominated(vector<ID> &N3_vw, ID u, vector<vector<bool>> &belongToNeigh) {/*判断结点u能否支配某个结点集*/
 		for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
 			ID t = *iter;
@@ -403,92 +412,92 @@ namespace szx {
 				}
 			}
 		}
-		/* 删除掉度为2且满足一定条件的被支配结点 */
-		for (auto i = 0; i < size; ++i) {
-			if (isWhiteNode[i]) {
-				auto iter1 = trueSets.find(i);
-				auto iter2 = delSets.find(i);
-				if (iter1 == trueSets.end() && iter2 == delSets.end()) {/* 说明是没被remove的结点 */
-					if (new_neighbours[i].size() == 2) {
-						ID node1 = new_neighbours[i][0];
-						ID node2 = new_neighbours[i][1];
-						bool notFind = true;
-						for (auto j = 0; j < new_neighbours[node1].size() && notFind; ++j) {
-							ID n1 = new_neighbours[node1][j];
-							if (n1 == node2) {
-								notFind = false;
-								break;
-							}
-						}
-						for (auto j = 0; j < new_neighbours[node1].size() && notFind; ++j) {
-							ID n1 = new_neighbours[node1][j];
-							for (auto k = 0; k < new_neighbours[node2].size() && notFind; ++k) {
-								ID n2 = new_neighbours[node2][k];
-								if (n1 == n2) {
-									notFind = false;
-									break;
-								}
-							}
-						}
-						if (!notFind) {
-							eraseElem(new_neighbours[node1], i);
-							eraseElem(new_neighbours[node2], i);
-							delSets.insert(i);
-						}
-					}
-				}
-			}
-		}
+		///* 删除掉度为2且满足一定条件的被支配结点 */
+		//for (auto i = 0; i < size; ++i) {
+		//	if (isWhiteNode[i]) {
+		//		auto iter1 = trueSets.find(i);
+		//		auto iter2 = delSets.find(i);
+		//		if (iter1 == trueSets.end() && iter2 == delSets.end()) {/* 说明是没被remove的结点 */
+		//			if (new_neighbours[i].size() == 2) {
+		//				ID node1 = new_neighbours[i][0];
+		//				ID node2 = new_neighbours[i][1];
+		//				bool notFind = true;
+		//				for (auto j = 0; j < new_neighbours[node1].size() && notFind; ++j) {
+		//					ID n1 = new_neighbours[node1][j];
+		//					if (n1 == node2) {
+		//						notFind = false;
+		//						break;
+		//					}
+		//				}
+		//				for (auto j = 0; j < new_neighbours[node1].size() && notFind; ++j) {
+		//					ID n1 = new_neighbours[node1][j];
+		//					for (auto k = 0; k < new_neighbours[node2].size() && notFind; ++k) {
+		//						ID n2 = new_neighbours[node2][k];
+		//						if (n1 == n2) {
+		//							notFind = false;
+		//							break;
+		//						}
+		//					}
+		//				}
+		//				if (!notFind) {
+		//					eraseElem(new_neighbours[node1], i);
+		//					eraseElem(new_neighbours[node2], i);
+		//					delSets.insert(i);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
-		/* 删除掉度为3且满足一定条件的被支配结点 */
-		for (auto i = 0; i < size; ++i) {
-			if (isWhiteNode[i]) {
-				auto iter1 = trueSets.find(i);
-				auto iter2 = delSets.find(i);
-				if (iter1 == trueSets.end() && iter2 == delSets.end()) {/* 说明是没被remove的结点 */
-					if (new_neighbours[i].size() == 3) {
-						bool find = false;
-						for (auto j = 0; j < new_neighbours[i].size(); ++j) {
-							ID n1, n2;
-							ID node = new_neighbours[i][j];
-							if (j == 0) {
-								n1 = new_neighbours[i][1];
-								n2 = new_neighbours[i][2];
-							}
-							else if (j == 1) {
-								n1 = new_neighbours[i][0];
-								n2 = new_neighbours[i][2];
-							}
-							else if (j == 2) {
-								n1 = new_neighbours[i][0];
-								n2 = new_neighbours[i][1];
-							}
-							bool notFind1 = true, notFind2 = true;
-							for (auto k = 0; k < new_neighbours[node].size(); ++k) {
-								if (n1 == new_neighbours[node][k]) {
-									notFind1 = false;
-								}
-								else if (n2 == new_neighbours[node][k]) {
-									notFind2 = false;
-								}
+		///* 删除掉度为3且满足一定条件的被支配结点 */
+		//for (auto i = 0; i < size; ++i) {
+		//	if (isWhiteNode[i]) {
+		//		auto iter1 = trueSets.find(i);
+		//		auto iter2 = delSets.find(i);
+		//		if (iter1 == trueSets.end() && iter2 == delSets.end()) {/* 说明是没被remove的结点 */
+		//			if (new_neighbours[i].size() == 3) {
+		//				bool find = false;
+		//				for (auto j = 0; j < new_neighbours[i].size(); ++j) {
+		//					ID n1, n2;
+		//					ID node = new_neighbours[i][j];
+		//					if (j == 0) {
+		//						n1 = new_neighbours[i][1];
+		//						n2 = new_neighbours[i][2];
+		//					}
+		//					else if (j == 1) {
+		//						n1 = new_neighbours[i][0];
+		//						n2 = new_neighbours[i][2];
+		//					}
+		//					else if (j == 2) {
+		//						n1 = new_neighbours[i][0];
+		//						n2 = new_neighbours[i][1];
+		//					}
+		//					bool notFind1 = true, notFind2 = true;
+		//					for (auto k = 0; k < new_neighbours[node].size(); ++k) {
+		//						if (n1 == new_neighbours[node][k]) {
+		//							notFind1 = false;
+		//						}
+		//						else if (n2 == new_neighbours[node][k]) {
+		//							notFind2 = false;
+		//						}
 
-							}
-							if (!notFind1 && !notFind2) {
-								find = true;
-								break;
-							}
-						}
-						if (find) {
-							for (auto j = 0; j < new_neighbours[i].size(); ++j) {
-								ID node = new_neighbours[i][j];
-								eraseElem(new_neighbours[node], i);
-							}
-							delSets.insert(i);
-						}
-					}
-				}
-			}
-		}
+		//					}
+		//					if (!notFind1 && !notFind2) {
+		//						find = true;
+		//						break;
+		//					}
+		//				}
+		//				if (find) {
+		//					for (auto j = 0; j < new_neighbours[i].size(); ++j) {
+		//						ID node = new_neighbours[i][j];
+		//						eraseElem(new_neighbours[node], i);
+		//					}
+		//					delSets.insert(i);
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 	}
 	void dataReductionRule1(std::vector<std::vector<ID>> &neighbours,std::set<ID> &trueSets, std::set<ID> &delSets) {
 		vector<vector<bool>> belongTo; /* belongTo[i][j]:结点j是否属于结点i能覆盖的点 */
@@ -627,6 +636,243 @@ namespace szx {
 			index_w++;
 		}
 	}
+	void dataReductionRule2_old(std::vector<std::vector<ID>> &neighbours, std::set<std::vector<ID>> &atLeastTrueSets, std::set<ID> &trueSets, std::set<ID> &delSets) {
+		int size = neighbours.size();
+		vector<vector<bool>> belongToNeigh; /* belongToNeigh[v][u] ，标记结点u是否属于N(v) */
+		map<ID, map<ID, set<ID>>> N; /* 用于存储N(v,w) */
+		map<ID, map<ID, set<ID>>> N1;
+		map<ID, map<ID, set<ID>>> N2;
+		map<ID, map<ID, set<ID>>> N3;
+
+		///内存申请
+		ofstream ofs;
+		ofs.open("old.txt", ios::out);
+		belongToNeigh.resize(size);
+		for (auto v = 0; v < size; ++v) {
+			belongToNeigh[v].resize(size);
+		}
+		for (auto v = 0; v < size; ++v) {
+			for (auto i = 0; i < neighbours[v].size(); ++i) {
+				ID u = neighbours[v][i];
+				belongToNeigh[v][u] = true;
+			}
+		}
+
+		for (auto v = 0; v < size; ++v) {
+			map<ID, set<ID>> V;
+			for (auto w = v + 1; w < size; ++w) {
+				set<ID> W;
+				for (auto i = 0; i < neighbours[v].size(); ++i) {
+					int u = neighbours[v][i]; /* u为v的邻居结点 */
+					if (u != w) {
+						W.insert(u);
+					}
+				}
+				for (auto i = 0; i < neighbours[w].size(); ++i) {
+					int u = neighbours[w][i]; /* u为w的邻居结点 */
+					if (u != v) {
+						W.insert(u);
+					}
+				}
+				V.insert(make_pair(w, W));
+			}
+			N.insert(make_pair(v, V));
+		}
+		for (auto iter_v = N.begin(); iter_v != N.end(); ++iter_v) {
+			ID v = (*iter_v).first;
+			map<ID, set<ID>> &temp = (*iter_v).second;
+			for (auto iter_w = temp.begin(); iter_w != temp.end(); ++iter_w) {
+				ID w = (*iter_w).first;
+				set<ID> &N_vw = (*iter_w).second;/* 即集合N(v,w) */
+				
+			}
+		}
+		for (auto iter_v = N.begin(); iter_v != N.end(); ++iter_v) {
+			ID v = (*iter_v).first;
+			map<ID, set<ID>> &temp = (*iter_v).second;
+			map<ID, set<ID>> N1_second;
+			for (auto iter_w = temp.begin(); iter_w != temp.end(); ++iter_w) {
+				ID w = (*iter_w).first;
+				set<ID> &N_vw = (*iter_w).second;/* 即集合N(v,w) */
+				set<ID> N1_vw; /* 集合N1(v,w) */
+				for (auto iter_u = N_vw.begin(); iter_u != N_vw.end(); ++iter_u) {
+					ID u = *iter_u;
+					for (auto j = 0; j < neighbours[u].size(); ++j) {
+						ID t = neighbours[u][j];
+						auto findT = N_vw.find(t);
+						if (t != v && t != w && findT == N_vw.end()) {/* t不属于N[v,w]，即t不为v，也不为w，也不属于N(v,w)*/
+
+							N1_vw.insert(u);
+							break;
+						}
+					}
+				}
+				N1_second.insert(make_pair(w, N1_vw));
+			}
+			N1.insert(make_pair(v, N1_second));
+		}
+		removeNodesSet(N, N1);
+
+		for (auto N_iter_v = N.begin(), N1_iter_v = N1.begin(); N_iter_v != N.end(); ++N_iter_v, ++N1_iter_v) {
+			ID v = (*N_iter_v).first;
+			map<ID, set<ID>> &tempN = (*N_iter_v).second;
+			map<ID, set<ID>> &tempN1 = (*N1_iter_v).second;
+			map<ID, set<ID>> N2_second;
+			for (auto N_iter_w = tempN.begin(), N1_iter_w = tempN1.begin(); N_iter_w != tempN.end(); ++N_iter_w, ++N1_iter_w) {
+				ID w = (*N_iter_w).first;
+				set<ID> &N_vw = (*N_iter_w).second; /* 此时的N(v,w)中已经不含N1(v,w)的结点 */
+				set<ID> &N1_vw = (*N1_iter_w).second;
+				set<ID> N2_vw;
+				for (auto iter_u = N_vw.begin(); iter_u != N_vw.end(); ++iter_u) {/* 遍历N(v,w)中除去N1(v,w)的结点u */
+					ID u = *iter_u;
+					for (auto j = 0; j < neighbours[u].size(); ++j) {/* 判断u的邻居结点t是否有属于N1(v,w)中的结点 */
+						ID t = neighbours[u][j];
+						auto find = N1_vw.find(t);
+						if (find != N1_vw.end()) {/* 说明有t属于N1(v,w) */
+
+							N2_vw.insert(u);
+							break;
+						}
+					}
+				}
+				N2_second.insert(make_pair(w, N2_vw));
+			}
+			N2.insert(make_pair(v, N2_second));
+		}
+		removeNodesSet(N, N2);
+		N3 = N;
+		for (auto N2_iter_v = N2.begin(), N3_iter_v = N3.begin(); N2_iter_v != N2.end(); ++N2_iter_v, ++N3_iter_v) {
+			ID v = (*N2_iter_v).first;
+			auto find = delSets.find(v);
+			if (find != delSets.end()) continue;
+
+			map<ID, set<ID>> &tempN2 = (*N2_iter_v).second;
+			map<ID, set<ID>> &tempN3 = (*N3_iter_v).second;
+			for (auto N2_iter_w = tempN2.begin(), N3_iter_w = tempN3.begin(); N2_iter_w != tempN2.end(); ++N2_iter_w, ++N3_iter_w) {
+				ID w = (*N2_iter_w).first;
+				find = delSets.find(w);
+				set<ID> &N3_vw = (*N3_iter_w).second;
+				set<ID> &N2_vw = (*N2_iter_w).second;
+				if (find != delSets.end() || N3_vw.size() <= 1) continue;
+
+				bool dominate = false;
+				vector<ID> trueSet;
+				for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {/*判断N3(v,w)中的某个点u能否支配整个N3(v,w)*/
+					ID u = *iter;
+					if (ifCanBeDominated(N3_vw, u, belongToNeigh)) {
+						dominate = true;
+						break;
+					}
+				}
+				if (!dominate) {
+					for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {/*判断N2(v,w)中的某个点u能否支配整个N3(v,w)*/
+						ID u = *iter;
+						if (ifCanBeDominated(N3_vw, u, belongToNeigh)) {
+							dominate = true;
+							break;
+						}
+					}
+				}
+				if (!dominate) {/* 说明N3(v,w)无法被N2(v,w)或N3(v,w)中的某个结点支配 */
+
+					bool dominate_v = ifCanBeDominated(N3_vw, v, belongToNeigh);
+					bool dominate_w = ifCanBeDominated(N3_vw, w, belongToNeigh);
+					if (dominate_v || dominate_w) {// case1: N3(v,w)能被v或者w支配
+						if (dominate_v && dominate_w) {
+							auto find_v = trueSets.find(v);
+							auto find_w = trueSets.find(w);
+							if (find_v == trueSets.end() && find_w == trueSets.end()) {/* 说明v和w都没有被确定为中心 */
+								trueSet.push_back(v);
+								trueSet.push_back(w);
+								atLeastTrueSets.insert(trueSet);
+							}
+							for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+								ID u = *iter;
+								delSets.insert(u);
+							}
+							for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
+								ID u = *iter;
+								if (belongToNeigh[v][u] && belongToNeigh[w][u]) {
+									delSets.insert(u);
+								}
+							}
+						}
+						else if (dominate_v && !dominate_w) {
+							trueSets.insert(v);
+							for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+								ID u = *iter;
+								delSets.insert(u);
+							}
+							for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
+								ID u = *iter;
+								if (belongToNeigh[v][u]) {
+									delSets.insert(u);
+								}
+							}
+						}
+						else if (!dominate_v &&dominate_w) {
+							trueSets.insert(w);
+							for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+								ID u = *iter;
+								delSets.insert(u);
+							}
+							for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
+								ID u = *iter;
+								if (belongToNeigh[w][u]) {
+									delSets.insert(u);
+								}
+							}
+						}
+					}
+					else {
+						ofs << v << " " << w << endl;
+
+						trueSets.insert(v);
+						trueSets.insert(w);
+
+						for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
+							ID u = *iter;
+							delSets.insert(u);
+						}
+						for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
+							ID u = *iter;
+							delSets.insert(u);
+						}
+					}
+				}
+			}
+		}
+
+		cout << "rule2:" << trueSets.size() << endl;
+		cout << "rule2:" << delSets.size() << endl;
+		ofs << "true" << endl;
+		for (auto iter = trueSets.begin(); iter != trueSets.end(); ++iter) {
+			ofs << *iter << endl;
+		}
+		ofs << "del" << endl;
+		for (auto iter = delSets.begin(); iter != delSets.end(); ++iter) {
+			ofs << *iter << endl;
+		}
+		ofs.close();
+		for (auto iter = trueSets.begin(); iter != trueSets.end(); ++iter) {
+			ID u = *iter;
+			auto find = delSets.find(u);
+			if (find != delSets.end()) {
+				cout << u << "  error" << endl;
+			}
+		}
+		/*for (auto i = 0; i < trueSets.size(); ++i) {
+			for (auto j = 0; j < trueSets[i].size(); ++j) {
+				cout << trueSets[i][j] << " ";
+			}
+			cout << endl;
+		}
+		cout << endl;
+		for (auto i = 0; i < delSets.size(); ++i) {
+			cout << "-" << delSets[i] << endl;
+		}*/
+	}
+
 	void dataReductionRule2(const std::vector<std::vector<ID>> &neighbours, std::set<std::vector<ID>> &atLeastTrueSets, std::set<ID> &trueSets, std::set<ID> &delSets) {
 		int size = neighbours.size();
 		vector<vector<bool>> belongToNeigh; /* belongToNeigh[v][u] ，标记结点u是否属于N(v) */
@@ -656,6 +902,8 @@ namespace szx {
 			}
 		}
 		floyd(adjMat);
+		/*ofstream ofs;
+		ofs.open("new.txt", ios::out);*/
 		for (auto v = 0; v < size; ++v) {
 			auto find_del = delSets.find(v),find_true = trueSets.find(v);
 			if (find_del != delSets.end() ) continue;
@@ -667,6 +915,7 @@ namespace szx {
 					vector<bool> isBelongToN_vw,isBelongToN1_vw,isBelongToN2_vw;
 					vector<ID> N1_vw,N2_vw,N3_vw;
 					reduction_merge(neighbours, v, w, N_vw);
+					
 					if (N_vw.size() > 1) {
 						isBelongToN_vw.resize(size);
 						isBelongToN1_vw.resize(size);
@@ -731,6 +980,7 @@ namespace szx {
 									}
 								}
 								if (!dominate) {/* 说明N3(v,w)无法被N2(v,w)或N3(v,w)中的某个结点支配 */
+									
 									bool dominate_v = ifCanBeDominated(N3_vw, v, belongToNeigh);
 									bool dominate_w = ifCanBeDominated(N3_vw, w, belongToNeigh);
 									if (dominate_v || dominate_w) {// case1: N3(v,w)能被v或者w支配
@@ -781,16 +1031,23 @@ namespace szx {
 										}
 									}
 									else {
+										//ofs << v << " " << w << endl;
+
+
 										trueSets.insert(v);
 										trueSets.insert(w);
 
 										for (auto iter = N3_vw.begin(); iter != N3_vw.end(); ++iter) {
 											ID u = *iter;
-											delSets.insert(u);
+											auto find = trueSets.find(u);
+											if(find ==trueSets.end())
+												delSets.insert(u);
 										}
 										for (auto iter = N2_vw.begin(); iter != N2_vw.end(); ++iter) {
 											ID u = *iter;
-											delSets.insert(u);
+											auto find = trueSets.find(u);
+											if (find == trueSets.end())
+												delSets.insert(u);
 										}
 									}
 								}
@@ -807,6 +1064,23 @@ namespace szx {
 
 		cout << "rule2:" << trueSets.size() << endl;
 		cout << "rule2:" << delSets.size() << endl;
+		/*ofs << "true" << endl;
+		for (auto iter = trueSets.begin(); iter != trueSets.end(); ++iter) {
+			ofs << *iter << endl;
+		}
+		ofs << "del" << endl;
+		for (auto iter = delSets.begin(); iter != delSets.end(); ++iter) {
+			ofs << *iter << endl;
+		}
+		ofs.close();*/
+		for (auto iter = trueSets.begin(); iter != trueSets.end(); ++iter) {
+			ID u = *iter;
+			auto find = delSets.find(u);
+			if (find != delSets.end()) {
+				cout << u<<"  error" << endl;
+				exit(5);
+			}
+		}
 		/*for (auto i = 0; i < trueSets.size(); ++i) {
 			for (auto j = 0; j < trueSets[i].size(); ++j) {
 				cout << trueSets[i][j] << " ";
@@ -1125,7 +1399,7 @@ namespace szx {
 		//sort(coverSets.begin(), coverSets.end(), coverSets_sort);
 		dataReduction(neighbours, old_atLeastTrueSets, trueSets, delSets);
 		ofs << env.instPath.substr(9, env.instPath.length() - 14) << " " << trueSets.size() << " " << delSets.size() << "\n";
-
+		ofs.close();
 		cout << "after dataReductionRule1:" << old_atLeastTrueSets.size() << endl;
 		
 		cout << trueSets.size() << endl;
@@ -1151,11 +1425,11 @@ namespace szx {
 		string CNF_output;
 		string Reuslt_path;
 
-		Encoding_Mode mode = paralle_counter_l;
+		Encoding_Mode mode = sequential_counter_1;
 
 		if (mode == sequential_counter_1) {
 			CNF_output = "CNF/sequential_counter_less/" + file_name;
-			Reuslt_path = "Result\\sequential_counter_less\\glu_mix\\";
+			Reuslt_path = "Result\\sequential_counter_less\\MapleLCMDistChronoBT\\";
 		}
 		else if (mode == paralle_counter_l) {
 			CNF_output = "CNF/paralle_counter_less/" + file_name;
@@ -1167,11 +1441,17 @@ namespace szx {
 		}
 		int new_nodeNum = nodeNum - trueSets.size() - delSets.size();
 		int new_centerNum = centerNum - trueSets.size();
-		//sequential_counter_less(new_nodeNum, new_centerNum, file_name, belongTo, new_atLeastTrueSets);/*使用sequential_counter无冗余约束进行编码*/
-		paralle_counter_less(new_nodeNum, new_centerNum, file_name, belongTo, new_atLeastTrueSets);/*使用sequential_counter无冗余约束进行编码*/
-		//cardinalityNetwork(nodeNum, centerNum, file_name, belongTo);
 		int res = 0;
-		res = System::exec("glu_mix.exe " + CNF_output + " Result/" + file_name);/*对编码进行约束满足求解*/
+		if (new_nodeNum != 0) {
+			sequential_counter_less(new_nodeNum, new_centerNum, file_name, belongTo, new_atLeastTrueSets);/*使用sequential_counter无冗余约束进行编码*/
+		//paralle_counter_less(new_nodeNum, new_centerNum, file_name, belongTo, new_atLeastTrueSets);/*使用sequential_counter无冗余约束进行编码*/
+		//cardinalityNetwork(new_nodeNum, new_centerNum, file_name, belongTo,new_atLeastTrueSets);
+			res = System::exec("MapleLCMDistChronoBT.exe " + CNF_output + " Result/" + file_name);/*对编码进行约束满足求解*/
+		}
+		else {
+			res = 10;
+		}
+		
 		//solveWithBoop(file_name, mode, CNF_output, nodeNum);
 		if (res == 10) {
 			System::exec("copy Result\\" + file_name + " " + Reuslt_path);
@@ -1203,14 +1483,6 @@ namespace szx {
 				centers[cnt++] = *iter;
 			}
 			if (cnt < centerNum) {/* 使用更少的中心数可以满足，需要随便添加一些中心 */
-				/*p = strtok(tempLine, delim);
-				for (int i = 0; i < new_nodeNum && cnt < centerNum; ++i) {
-					int temp = atoi(p);
-					if (i + 1 == -temp) {
-						centers[cnt++] = residualNodesMap.toArbitraryId(i);
-					}
-					p = strtok(NULL, delim);
-				}*/
 				for (auto iter = delSets.begin(); iter != delSets.end() && cnt <centerNum; ++iter) {
 					centers[cnt++] = *iter;
 				}
@@ -1222,9 +1494,11 @@ namespace szx {
 				}
 				if (sln.coverRadius < aux.coverRadii[n]) { sln.coverRadius = aux.coverRadii[n]; }
 			}
+			
 			Log(LogSwitch::Szx::Framework) << "worker " << workerId << " ends." << endl;
 		}
 		else {
+			
 			Sampling sampler(rand, centerNum);
 			for (ID n = 0; !timer.isTimeOut() && (n < nodeNum); ++n) {
 				ID center = sampler.replaceIndex();
@@ -1234,7 +1508,13 @@ namespace szx {
 		}
 
 		//}
+		ofs.open("radius_error.txt", ios::app);
+		if (sln.coverRadius != Radius) {
 
+			cout << "radius error" << endl;
+			ofs << file_name << endl;
+			ofs.close();
+		}
 
 		return true;
 	}
@@ -1559,7 +1839,7 @@ namespace szx {
 		}
 		return res;
 	}
-	void Solver::cardinalityNetwork(int nodeNum, int centerNum, const std::string &file_name, std::vector<std::vector<ID>>& belongTo) {
+	void Solver::cardinalityNetwork(int nodeNum, int centerNum, const std::string &file_name, std::vector<std::vector<ID>>& belongTo, set<vector<ID>> &atLeasttrueSets) {
 		ofstream ofs;
 		string CNF_output = "CNF//cardinality_network//" + file_name;
 		ofs.open(CNF_output, ios::out);
@@ -1611,6 +1891,15 @@ namespace szx {
 				}
 				ofs << "0" << endl;
 				cardinality_clause_num++;
+			}
+			for (auto i = 0; i < atLeasttrueSets.size(); ++i) {
+				auto iter = atLeasttrueSets.begin();
+				for (auto j = 0; j < (*iter).size(); ++j) {
+					ofs << (*iter)[j] + 1 << " ";
+				}
+				ofs << "0" << endl;
+				cardinality_clause_num++;
+
 			}
 			std::ifstream t(CNF_output);
 			std::string str((std::istreambuf_iterator<char>(t)),
